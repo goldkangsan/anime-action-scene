@@ -187,6 +187,40 @@ def prepare_anything_v5():
             print(f"  [WARN] {hub_file} 다운 실패: {e}")
 
 
+def prepare_champ_weights():
+    """
+    Champ pretrained 가중치 다운로드.
+    HuggingFace: fudan-generative-vision/champ
+    포함: denoising_unet, reference_unet, motion_module, guidance_encoder_*
+    """
+    print(">>> [7/7] Preparing Champ pretrained weights (3D pipeline)...")
+    local_dir = BASE_DIR / "champ"
+    local_dir.mkdir(parents=True, exist_ok=True)
+    files = [
+        "denoising_unet.pth",
+        "reference_unet.pth",
+        "motion_module.pth",
+        "guidance_encoder_depth.pth",
+        "guidance_encoder_normal.pth",
+        "guidance_encoder_semantic.pth",
+        "guidance_encoder_dwpose.pth",
+    ]
+    for hub_file in files:
+        saved_path = local_dir / hub_file
+        if saved_path.exists():
+            print(f"  [SKIP] {hub_file}")
+            continue
+        try:
+            hf_hub_download(
+                repo_id="fudan-generative-vision/champ",
+                filename=hub_file,
+                local_dir=str(local_dir),
+            )
+            print(f"  [OK] {hub_file}")
+        except Exception as e:
+            print(f"  [WARN] {hub_file} 다운 실패: {e}")
+
+
 def check_weights():
     """다운로드된 weights 상태 확인"""
     print("\n>>> Checking pretrained_weights/ structure...\n")
@@ -221,11 +255,10 @@ def check_weights():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--anime",
-        action="store_true",
-        help="Anything V5 UNet도 함께 다운로드 (애니 특화 모드용)",
-    )
+    parser.add_argument("--anime", action="store_true",
+                        help="Anything V5 UNet 다운로드 (애니 스타일용)")
+    parser.add_argument("--champ", action="store_true",
+                        help="Champ 3D 파이프라인 가중치 다운로드")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -239,5 +272,8 @@ if __name__ == "__main__":
 
     if args.anime:
         prepare_anything_v5()
+
+    if args.champ:
+        prepare_champ_weights()
 
     check_weights()
