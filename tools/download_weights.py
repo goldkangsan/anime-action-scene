@@ -1,6 +1,8 @@
 """
 Step 1: pretrained weights 다운로드 스크립트
-실행: python tools/download_weights.py
+실행:
+  python tools/download_weights.py           # SD 1.5 기반 (기본)
+  python tools/download_weights.py --anime   # Anything V5 추가 다운로드
 
 다운받는 것들:
   - stable-diffusion-v1-5 (UNet)
@@ -8,8 +10,10 @@ Step 1: pretrained weights 다운로드 스크립트
   - DWPose (pose detector: yolox_l.onnx, dw-ll_ucoco_384.onnx)
   - sd-vae-ft-mse (VAE)
   - AnimateAnyone weights (denoising_unet, reference_unet, pose_guider, motion_module)
+  - [--anime] Anything V5 UNet (SD 1.5 호환 애니 특화 가중치)
 """
 
+import argparse
 import os
 from pathlib import Path, PurePosixPath
 from huggingface_hub import hf_hub_download
@@ -142,6 +146,47 @@ def prepare_animate_anyone():
         print(f"  [OK] {hub_file}")
 
 
+def prepare_anything_v5():
+    """
+    Anything V5 UNet 다운로드 (SD 1.5 UNet 교체용).
+    HuggingFace repo: Linaqruf/anything-v5.0
+    SD 1.5와 동일한 UNet 아키텍처 → VAE/motion_module/pose_guider는 그대로 재사용 가능.
+    """
+    print(">>> [6/6] Preparing Anything V5 UNet (anime base model)...")
+    local_dir = BASE_DIR / "anything-v5"
+    local_dir.mkdir(parents=True, exist_ok=True)
+
+    files = [
+        "unet/config.json",
+        "unet/diffusion_pytorch_model.bin",
+        "scheduler/scheduler_config.json",
+        "tokenizer/merges.txt",
+        "tokenizer/special_tokens_map.json",
+        "tokenizer/tokenizer_config.json",
+        "tokenizer/vocab.json",
+        "text_encoder/config.json",
+        "text_encoder/pytorch_model.bin",
+        "feature_extractor/preprocessor_config.json",
+        "model_index.json",
+    ]
+    for hub_file in files:
+        path = Path(hub_file)
+        saved_path = local_dir / path
+        if saved_path.exists():
+            print(f"  [SKIP] {hub_file}")
+            continue
+        try:
+            hf_hub_download(
+                repo_id="Linaqruf/anything-v5.0",
+                subfolder=str(PurePosixPath(path.parent)) if str(path.parent) != "." else None,
+                filename=path.name,
+                local_dir=str(local_dir),
+            )
+            print(f"  [OK] {hub_file}")
+        except Exception as e:
+            print(f"  [WARN] {hub_file} 다운 실패: {e}")
+
+
 def check_weights():
     """다운로드된 weights 상태 확인"""
     print("\n>>> Checking pretrained_weights/ structure...\n")
@@ -175,12 +220,24 @@ def check_weights():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--anime",
+        action="store_true",
+        help="Anything V5 UNet도 함께 다운로드 (애니 특화 모드용)",
+    )
+    args = parser.parse_args()
+
     print("=" * 60)
-    print("Moore-AnimateAnyone: Downloading pretrained weights")
+    print("Anime Action Scene: Downloading pretrained weights")
     print("=" * 60)
     prepare_base_model()
     prepare_image_encoder()
     prepare_dwpose()
     prepare_vae()
     prepare_animate_anyone()
+
+    if args.anime:
+        prepare_anything_v5()
+
     check_weights()

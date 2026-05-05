@@ -64,11 +64,29 @@ def parse_args():
     parser.add_argument(
         "--device",
         type=str,
-        default="cuda",
-        choices=["cuda", "cpu"],
-        help="실행 디바이스",
+        default=None,
+        choices=["cuda", "mps", "cpu"],
+        help="실행 디바이스 (기본: 자동 감지)",
     )
     return parser.parse_args()
+
+
+def get_device(prefer: str = None) -> str:
+    """cuda → mps → cpu 순서로 자동 감지. prefer로 강제 지정 가능."""
+    if prefer:
+        return prefer
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def get_weight_dtype(device: str) -> torch.dtype:
+    """MPS는 일부 fp16 연산이 불안정하므로 fp32 사용."""
+    if device == "mps":
+        return torch.float32
+    return torch.float16
 
 
 def load_models(config, weight_dtype: torch.dtype, device: str):
@@ -225,14 +243,16 @@ def main():
     args   = parse_args()
     config = OmegaConf.load(args.config)
 
-    weight_dtype = torch.float16 if config.weight_dtype == "fp16" else torch.float32
-    device       = args.device
+    device       = get_device(args.device)
+    weight_dtype = get_weight_dtype(device)
+    if config.weight_dtype == "fp32":
+        weight_dtype = torch.float32
 
     print("=" * 60)
     print("Moore-AnimateAnyone: Character Animation Inference")
     print(f"  Resolution : {args.W}x{args.H}")
     print(f"  Frames     : {args.L}")
-    print(f"  Device     : {device}  |  dtype: {config.weight_dtype}")
+    print(f"  Device     : {device}  |  dtype: {weight_dtype}")
     print(f"  Seed       : {args.seed}")
     print("=" * 60)
 
@@ -245,7 +265,9 @@ def main():
         infer_config, weight_dtype, device
     )
 
-    generator = torch.manual_seed(args.seed)
+    # MPS는 device-specific generator가 불안정 → CPU generator 사용
+    generator = torch.Generator()
+    generator.manual_seed(args.seed)
 
     # ─── 출력 디렉토리 ───────────────────────────────────────────────────────
     date_str  = datetime.now().strftime("%Y%m%d")
