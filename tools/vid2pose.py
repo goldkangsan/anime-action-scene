@@ -48,9 +48,9 @@ def parse_args():
     parser.add_argument(
         "--device",
         type=str,
-        default="cuda",
+        default=None,
         choices=["cuda", "cpu"],
-        help="onnxruntime 실행 디바이스 (기본: cuda)",
+        help="onnxruntime 실행 디바이스 (기본: 자동 감지, MPS는 cpu로 대체)",
     )
     parser.add_argument(
         "--max_frames",
@@ -117,9 +117,16 @@ def extract_pose_from_video(
 
 if __name__ == "__main__":
     args = parse_args()
+    # DWPose(ONNX)는 cuda/cpu만 지원 → MPS면 cpu로 대체
+    import torch
+    if args.device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    else:
+        device = args.device
+
     extract_pose_from_video(
         video_path=args.video_path,
         output_path=args.output_path,
-        device=args.device,
+        device=device,
         max_frames=args.max_frames,
     )
