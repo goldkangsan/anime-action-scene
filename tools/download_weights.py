@@ -26,6 +26,7 @@ def prepare_base_model():
     print(">>> [1/5] Preparing stable-diffusion-v1-5 UNet weights...")
     local_dir = BASE_DIR / "stable-diffusion-v1-5"
     local_dir.mkdir(parents=True, exist_ok=True)
+    # v1-5-pruned-emaonly.ckpt (4GB) 은 inference에 불필요 → 제외
     files = [
         "unet/config.json",
         "unet/diffusion_pytorch_model.bin",
@@ -38,7 +39,11 @@ def prepare_base_model():
         "text_encoder/pytorch_model.bin",
         "feature_extractor/preprocessor_config.json",
         "model_index.json",
-        "v1-5-pruned-emaonly.ckpt",  # optional
+    ]
+    # runwayml/stable-diffusion-v1-5 는 deprecated → 신규 repo 우선, 실패 시 fallback
+    repo_ids = [
+        "stable-diffusion-v1-5/stable-diffusion-v1-5",
+        "runwayml/stable-diffusion-v1-5",
     ]
     for hub_file in files:
         path = Path(hub_file)
@@ -46,16 +51,22 @@ def prepare_base_model():
         if saved_path.exists():
             print(f"  [SKIP] {hub_file}")
             continue
-        try:
-            hf_hub_download(
-                repo_id="runwayml/stable-diffusion-v1-5",
-                subfolder=str(PurePosixPath(path.parent)) if str(path.parent) != "." else None,
-                filename=path.name,
-                local_dir=str(local_dir),
-            )
-            print(f"  [OK] {hub_file}")
-        except Exception as e:
-            print(f"  [WARN] {hub_file} 다운 실패 (선택 파일일 수 있음): {e}")
+        downloaded = False
+        for repo_id in repo_ids:
+            try:
+                hf_hub_download(
+                    repo_id=repo_id,
+                    subfolder=str(PurePosixPath(path.parent)) if str(path.parent) != "." else None,
+                    filename=path.name,
+                    local_dir=str(local_dir),
+                )
+                print(f"  [OK] {hub_file}")
+                downloaded = True
+                break
+            except Exception:
+                continue
+        if not downloaded:
+            print(f"  [WARN] {hub_file} 다운 실패 — 수동 확인 필요")
 
 
 def prepare_image_encoder():
