@@ -24,12 +24,8 @@ reference 이미지 + driving video로부터 캐릭터 애니메이션을 생성
 
 GPU(NVIDIA CUDA)가 필요하다. `2d/` 안에서 순서대로 진행:
 
-```bash
-# 0. 엔진 준비 (submodule로 등록돼 있지 않다면)
-git clone --depth 1 https://github.com/MooreThreads/Moore-AnimateAnyone
-# 이미 submodule로 등록돼 있다면: git submodule update --init --recursive
 
-# 1. torch를 먼저, 본인 CUDA 버전에 맞춰 설치 (RunPod PyTorch 템플릿이면 이미 설치돼 있어 생략 가능)
+# 1. torch를 먼저, 본인 버전에 맞게
 pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
 
 # 2. 나머지 의존성
