@@ -1,3 +1,6 @@
 [submodule "champ"]
 	path = champ
 	url = https://github.com/fudan-generative-vision/champ.git
+[submodule "2d/Moore-AnimateAnyone"]
+	path = 2d/Moore-AnimateAnyone
+	url = https://github.com/MooreThreads/Moore-AnimateAnyone.git
