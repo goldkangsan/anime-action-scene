@@ -103,11 +103,3 @@ python run.py --ref character.png --video driving.mp4 --out result_fn.mp4 --nois
   특히 SD1.5는 CreativeML OpenRAIL-M이다. 크레딧: Moore-AnimateAnyone, (원본)
   AnimateAnyone, AnimateDiff, DWPose, Stable Diffusion. 배포 전 각 모델 카드에서
   최종 라이선스 조건을 확인할 것.
-
-## 실행 환경
-
-- **RunPod (메인 개발)**: PyTorch 템플릿을 사용하면 torch/CUDA가 이미 설치돼 있다
-  (셋업 1번 생략 가능). 가중치는 persistent volume(예: `/workspace/weights`)에 두고
-  `config.yaml`의 `weights_dir`을 그에 맞게 설정하면 세션 간에도 유지된다.
-- **Colab (데모용 노트)**: clone → 설치 → 가중치 로드 → inference 순서의 간단한 노트북.
-  세션이 초기화되므로 메인 개발 용도로는 쓰지 않는다.
