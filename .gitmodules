@@ -7,3 +7,6 @@
 [submodule "3d/champ"]
 	path = 3d/champ
 	url = https://github.com/fudan-generative-vision/champ.git
+[submodule "unianimate/UniAnimate"]
+	path = unianimate/UniAnimate
+	url = https://github.com/ali-vilab/UniAnimate.git
