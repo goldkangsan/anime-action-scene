@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **2D** (2023) | AnimateAnyone (Moore) | DWPose 2D 스켈레톤 | ✅ [`2d/`](2d/README.md) |
 | **3D** (2024) | Champ | SMPL 3D (depth·normal·semantic·dwpose) | ✅ [`3d/`](3d/README.md) |
-| **최신** (2026) | UniAnimate | DWPose + video diffusion 백본 | 비교용 별도 실험 (레포 외) |
+| **최신** (2026) | UniAnimate | DWPose + video diffusion 백본 | ✅ [`unianimate/`](unianimate/README.md) |
 
 **공통 구조** (세 모델 공통): 확산(Diffusion) 기반 ·
 **ReferenceNet**(외형 identity) + **Pose Guider**(동작 주입) + **Denoising UNet** + **Motion Module**(프레임 간 일관성).
@@ -33,6 +33,20 @@
 
 ---
 
+## 결과 영상
+
+같은 캐릭터(이누야샤)로 세대별 결과를 비교했다 — 분할 화면 = **참조 · 생성 · 가이드맵**.
+
+| 영상 | 모델 | 구성 | 포인트 |
+|---|---|---|---|
+| [`champ_inuyasha.mp4`](results/champ_inuyasha.mp4) | 3D Champ | ref · 생성 · dwpose · depth · normal | SMPL 가이드맵 4종이 함께 보임 |
+| [`unianimate_inuyasha.mp4`](results/unianimate_inuyasha.mp4) | 최신 UniAnimate | ref · dwpose · 생성 | DWPose 기반, 셋 중 가장 깔끔 |
+| [`champ_freenoise_inuyasha.mp4`](results/champ_freenoise_inuyasha.mp4) | 3D Champ + FreeNoise | 5분할 | FreeNoise 적용해도 기본 대비 변화 미미 |
+
+> GitHub에서 파일명을 클릭하면 브라우저에서 바로 재생된다.
+
+---
+
 ## 폴더 구조
 
 ```
@@ -47,6 +61,10 @@ anime-action-scene/
 │   ├── noise.py             #   2d와 동일 파일 (prepare_latents 몽키패치)
 │   ├── preprocess.py        #   raw 영상 → SMPL guidance (무거운 별도 경로)
 │   └── champ/                #  엔진 submodule
+├── unianimate/              # UniAnimate 최신 모델 wrapper      → unianimate/README.md
+│   ├── UniAnimate_infer_my.yaml
+│   └── UniAnimate/           #  엔진 submodule
+├── results/                 # 세대별 결과 영상 (이누야샤)
 ├── run_gradio.py            # Gradio 데모 UI
 ├── colab_2d_baseline.ipynb  # Colab 실험 노트북
 ├── colab_champ_inference.ipynb
@@ -75,6 +93,13 @@ python run.py --ref character.png --video driving.mp4 --out result_fn.mp4 --nois
 cd 3d
 python download_weights.py
 python run.py --ref character.png --video example_data/motions/motion-01 --out result.mp4
+```
+
+**최신 (UniAnimate)** — modelscope 가중치 + pose 정렬 후 inference (자세히는 [`unianimate/README.md`](unianimate/README.md))
+```bash
+cd unianimate/UniAnimate
+python run_align_pose.py --ref_name data/images/ref.jpg --source_video_paths data/videos/clip.mp4 --saved_pose_dir data/saved_pose/ref_clip
+python inference.py --cfg configs/UniAnimate_infer_my.yaml
 ```
 
 **Gradio 데모**: `python run_gradio.py`
