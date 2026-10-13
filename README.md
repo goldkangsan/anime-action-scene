@@ -3,7 +3,7 @@
 
 > 캐릭터 이미지 1장 + 동작 영상 → 그 캐릭터가 그 동작을 하는 애니메이션 영상 생성
 
-세대별 SOTA character animation 모델을 **직접 재현·비교**하고 애니 도메인에 적용한 프로젝트.
+여러 character animation 모델의 추론 결과를 비교하고 애니 도메인에 적용한 프로젝트.
 **학습/파인튜닝 없이** 공개 가중치를 그대로 불러와 inference만 수행한다.
 
 ---
@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **2D** (2023) | AnimateAnyone (Moore) | DWPose 2D 스켈레톤 | ✅ [`2d/`](2d/README.md) |
 | **3D** (2024) | Champ | SMPL 3D (depth·normal·semantic·dwpose) | ✅ [`3d/`](3d/README.md) |
-| **최신** (2026) | UniAnimate | DWPose + video diffusion 백본 | ✅ [`unianimate/`](unianimate/README.md) |
+| **추가 모델** | UniAnimate | DWPose + video diffusion 백본 | ✅ [`unianimate/`](unianimate/README.md) |
 
 **공통 구조** (세 모델 공통): 확산(Diffusion) 기반 ·
 **ReferenceNet**(외형 identity) + **Pose Guider**(동작 주입) + **Denoising UNet** + **Motion Module**(프레임 간 일관성).
@@ -25,8 +25,8 @@
 ## 핵심 발견
 
 - **3D SMPL 가이드는 정보(깊이·표면)가 풍부하지만, 프레임 간 떨림(jitter)이 있다.**
-- training-free 노이즈 재배치(FreeNoise)로도 이 떨림은 크게 줄지 않았다 → **문제는 노이즈가 아니라 입력 가이드 자체.**
-- 최신 UniAnimate가 SMPL(3D)을 버리고 DWPose(2D)로 회귀한 흐름과 일치. → **정보량 ≠ 안정성.**
+- 이 사례에서는 training-free 노이즈 재배치(FreeNoise)를 적용해도 떨림이 크게 줄지 않았다. 입력 가이드의 영향을 추가로 확인할 필요가 있다.
+- UniAnimate의 DWPose 기반 결과와 비교하면, 이 사례에서는 더 풍부한 3D 가이드가 더 안정적인 결과를 보장하지 않았다.
 
 > ⚠️ **방법론 주의**: FreeNoise는 프레임 수 `L`이 `window_size`(기본 24)보다 **클 때만** `iid`와 달라진다.
 > `-L 24` 이하로 실험하면 재배치 루프가 비어 결과가 `iid`와 동일하다. 효과를 보려면 `-L 48` 이상으로 확인할 것.
@@ -35,12 +35,12 @@
 
 ## 결과 영상
 
-같은 캐릭터(이누야샤)로 세대별 결과를 비교했다 — 분할 화면 = **참조 · 생성 · 가이드맵**.
+같은 캐릭터(이누야샤)의 공개 결과 영상 3개를 아래에 정리했다. 분할 화면에는 **참조 · 생성 · 가이드맵**이 포함된다. 이 영상만으로 모델의 일반적 성능 우열을 판단할 수는 없다.
 
 | 영상 | 모델 | 구성 | 포인트 |
 |---|---|---|---|
 | [`champ_inuyasha.mp4`](results/champ_inuyasha.mp4) | 3D Champ | ref · 생성 · dwpose · depth · normal | SMPL 가이드맵 4종이 함께 보임 |
-| [`unianimate_inuyasha.mp4`](results/unianimate_inuyasha.mp4) | 최신 UniAnimate | ref · dwpose · 생성 | DWPose 기반, 셋 중 가장 깔끔 |
+| [`unianimate_inuyasha.mp4`](results/unianimate_inuyasha.mp4) | UniAnimate | ref · dwpose · 생성 | DWPose 기반, 셋 중 가장 깔끔 |
 | [`champ_freenoise_inuyasha.mp4`](results/champ_freenoise_inuyasha.mp4) | 3D Champ + FreeNoise | 5분할 | FreeNoise 적용해도 기본 대비 변화 미미 |
 
 > GitHub에서 파일명을 클릭하면 브라우저에서 바로 재생된다.
@@ -61,7 +61,7 @@ anime-action-scene/
 │   ├── noise.py             #   2d와 동일 파일 (prepare_latents 몽키패치)
 │   ├── preprocess.py        #   raw 영상 → SMPL guidance (무거운 별도 경로)
 │   └── champ/                #  엔진 submodule
-├── unianimate/              # UniAnimate 최신 모델 wrapper      → unianimate/README.md
+├── unianimate/              # UniAnimate wrapper      → unianimate/README.md
 │   ├── UniAnimate_infer_my.yaml
 │   └── UniAnimate/           #  엔진 submodule
 ├── results/                 # 세대별 결과 영상 (이누야샤)
@@ -95,9 +95,11 @@ python download_weights.py
 python run.py --ref character.png --video example_data/motions/motion-01 --out result.mp4
 ```
 
-**최신 (UniAnimate)** — modelscope 가중치 + pose 정렬 후 inference (자세히는 [`unianimate/README.md`](unianimate/README.md))
+**UniAnimate** — ModelScope 가중치와 포즈 정렬 후 inference (자세히는 [`unianimate/README.md`](unianimate/README.md))
 ```bash
+git submodule update --init --recursive
 cd unianimate/UniAnimate
+cp ../UniAnimate_infer_my.yaml configs/UniAnimate_infer_my.yaml
 python run_align_pose.py --ref_name data/images/ref.jpg --source_video_paths data/videos/clip.mp4 --saved_pose_dir data/saved_pose/ref_clip
 python inference.py --cfg configs/UniAnimate_infer_my.yaml
 ```
@@ -150,5 +152,4 @@ accelerate
 ## 크레딧 · 라이선스
 
 재현 기반: **Moore-AnimateAnyone · (원조) AnimateAnyone · Champ · AnimateDiff · DWPose · SMPL · Stable Diffusion**.
-코드는 Apache-2.0(wrapper는 우리 것). 가중치 라이선스는 코드와 별개다 —
-특히 SD1.5는 CreativeML OpenRAIL-M, SMPL body model은 별도 라이선스. 배포 전 각 모델 카드에서 최종 조건을 확인할 것.
+원본 프로젝트의 코드와 가중치는 각각의 라이선스를 따른다. 이 저장소 루트에는 wrapper 코드의 라이선스를 명시하는 `LICENSE` 파일이 없으므로 재사용 조건을 별도로 정해야 한다. 특히 SD1.5와 SMPL body model의 이용 조건은 배포 전 각 모델 카드에서 확인할 것.

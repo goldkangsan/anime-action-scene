@@ -24,7 +24,7 @@ reference 이미지 + driving video로부터 캐릭터 애니메이션을 생성
 
 GPU(NVIDIA CUDA)가 필요하다. `2d/` 안에서 순서대로 진행:
 
-
+```bash
 # 1. torch를 먼저, 본인 버전에 맞게
 pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu118
 
