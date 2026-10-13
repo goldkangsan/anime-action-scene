@@ -1,4 +1,4 @@
-# 2d/ — UniAnimate 2D Inference Wrapper
+# unianimate/ — UniAnimate Inference Wrapper
 
 UniAnimate submodule 기반 2D character animation inference wrapper.
 공개 가중치를 사용해 reference image + driving video로 animation video를 생성한다.
@@ -6,7 +6,7 @@ UniAnimate submodule 기반 2D character animation inference wrapper.
 ## 폴더 구조
 
 ```text
-2d/
+unianimate/
 ├── UniAnimate/                 # original UniAnimate submodule
 ├── README.md
 ├── requirements.txt
@@ -15,13 +15,11 @@ UniAnimate submodule 기반 2D character animation inference wrapper.
 
 ## Setup
 
-먼저 submodule을 받아온 뒤, 원본 UniAnimate 폴더 안에서 실행 환경을 설치한다.
+저장소 루트에서 등록된 submodule을 받아온 뒤, 원본 UniAnimate 폴더 안에서 실행 환경을 설치한다.
 
 ```bash
-git submodule add https://github.com/ali-vilab/UniAnimate.git UniAnimate
 git submodule update --init --recursive
-
-cd UniAnimate
+cd unianimate/UniAnimate
 pip install -r ../requirements.txt
 ```
 
